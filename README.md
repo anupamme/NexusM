@@ -112,7 +112,7 @@ NexusM does not just match Plex, Jellyfin, and Emby, it goes well beyond their c
 - **Custom Template System** - load external CSS and JavaScript template files at runtime to completely restyle the interface without touching the core application. Templates are hot-loaded from the templates folder and selectable from Settings. Ships with 6 templates: Horizon (amber home-theatre layout), Amazing! (Amazon Prime style), Jellyfish (Jellyfin inspired), YablakoTV (Apple TV style), Plux! (Plex inspired), and Netflux (Netflix style, with hero video previews).
 - Configurable sidebar with individual show/hide toggles for every section.
 - UI preferences including default view modes, Go Big autostart, and per-section sort order.
-- 26 interface languages: English, French, German, Spanish, Portuguese, Italian, Dutch, Polish, Romanian, Russian, Swedish, Ukrainian, Norwegian, Finnish, Estonian, Lithuanian, Slovenian, Albanian, Serbian, Chinese, Japanese, Korean, Hindi, Indonesian, Vietnamese, and Thai.
+- 29 interface languages: English, French, German, Spanish, Portuguese, Italian, Dutch, Polish, Romanian, Russian, Swedish, Ukrainian, Norwegian, Finnish, Estonian, Lithuanian, Slovenian, Albanian, Serbian, Chinese, Japanese, Korean, Hindi, Indonesian, Vietnamese, Thai, Arabic, Persian, and Hebrew.
 
 ### Other
 - Global search across all media types with instant results.
