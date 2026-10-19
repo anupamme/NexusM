@@ -183,8 +183,13 @@ public class AuthController : ControllerBase
                 var locked = _pinSecurity.RecordFailedAttempt(clientIP, dto.Username);
                 await Task.Delay(1000);
                 if (locked)
+                {
+                    // Lockout length escalates on repeat offenders (see PinSecurityService),
+                    // so report the actual remaining time rather than the flat base duration.
+                    var lockedForMinutes = _pinSecurity.GetLockoutMinutesRemaining(clientIP, dto.Username);
                     return StatusCode(StatusCodes.Status429TooManyRequests,
-                        new { error = $"Too many failed attempts. Account locked for {PinSecurityService.LockoutMinutesPublic} minutes." });
+                        new { error = $"Too many failed attempts. Account locked for {lockedForMinutes} minute(s)." });
+                }
                 return Unauthorized(new { error = "Invalid username or PIN" });
             }
             // Successful PIN - clear failed attempts
@@ -292,7 +297,8 @@ public class AuthController : ControllerBase
                 authenticated = false,
                 securityByPin = _config.Config.Security.SecurityByPin,
                 demoModeEnabled = _config.Config.DemoMode.Enabled,
-                language = _config.Config.UI.Language
+                language = _config.Config.UI.Language,
+                showIntro = _config.Config.UI.ShowIntro
             });
         }
 
