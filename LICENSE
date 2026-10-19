@@ -1,18 +1,19 @@
 NexusM — Media Library Manager
 Copyright (c) 2025–2026 NexusM.org
-Updated : 16-August-2026
+Updated : 09-October-2026
 
 ================================================================================
 NEXUSM LICENSE
 ================================================================================
 
-This software is released under the Creative Commons
-Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0).
+This software is released under the PolyForm Noncommercial License 1.0.0.
 
-  You may share it freely. You may NOT use it commercially, and you may NOT
-  distribute modified versions.
+  You may use, copy, modify and share it freely for noncommercial purposes,
+  including sharing your own modified versions. You may NOT use it, or any
+  modified version of it, for a commercial purpose without a separate
+  license from the author.
 
-  Full license: https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode
+  Full license: https://polyformproject.org/licenses/noncommercial/1.0.0/
 
 ================================================================================
 THIRD-PARTY COMPONENTS
@@ -38,6 +39,7 @@ NexusM bundles or depends on the following open-source libraries:
   QRCoder 1.4.x                                  MIT           Raffael Herrmann / QRCoder contributors
   Sdcb.LibRaw 0.21.x (C# wrapper)                MIT           Zhang Jinyao / Sdcb contributors
   Sharpcaster 3.0.0                              MIT           Teemu Tapanila (Tapanila/SharpCaster)
+  System.IO.Hashing 8.0.0                        MIT           .NET Foundation and Contributors
   Zeroconf 3.7.16 (transitive, via Sharpcaster)  MIT           Claire Novotny and contributors
   JSZip 3.10.x  [frontend]                       MIT           Stuart Knightley, David Duponchel et al.
   Leaflet.MarkerCluster 1.5.x  [frontend]        MIT           Dave Leaver and contributors
@@ -64,6 +66,8 @@ NexusM bundles or depends on the following open-source libraries:
   ─────────────────────────────────────────────  ────────────  ─────────────────────────────────────────
   ini-parser-netstandard 2.5.x                   Unlicense     Ricardo Amores Hernández and contributors
   ─────────────────────────────────────────────  ────────────  ─────────────────────────────────────────
+  EmulatorJS 4.2.x  [downloaded]                 GPL-3.0       EmulatorJS Contributors
+  ─────────────────────────────────────────────  ────────────  ─────────────────────────────────────────
   FFmpeg (external binary, optional)             LGPL-2.1 or   Fabrice Bellard & FFmpeg Contributors
                                                  GPL-2.0+      https://ffmpeg.org/legal.html
   PDFium (native, via PDFtoImage)                BSD-3-Clause  The Chromium Authors / PDFium Authors
@@ -76,6 +80,15 @@ NexusM bundles or depends on the following open-source libraries:
   (natural-language search), which is OFF by default. The model is not shipped with NexusM; it is
   fetched from Hugging Face only when a user enables the feature. Model card:
   https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
+
+[downloaded] EmulatorJS (https://github.com/EmulatorJS/EmulatorJS) powers the optional retro Game
+  Emulator feature (play ROMs in the browser), which is OFF by default. EmulatorJS is a SEPARATE
+  project under the GPL-3.0 license, a different license to NexusM itself (PolyForm Noncommercial
+  1.0.0, above).
+  It is never bundled with NexusM, never modified, and never included in this installer/portable
+  package - it is downloaded unmodified from its own official release, into its own folder, only
+  when an admin opts in from Settings. Full license:
+  https://github.com/EmulatorJS/EmulatorJS/blob/main/LICENSE
 
 ================================================================================
 EXTERNAL DATA & CONTENT SOURCES
@@ -96,6 +109,19 @@ behalf when an API key is configured.
                                                   https://www.themoviedb.org
   TVmaze           TV metadata                    Data under CC BY-SA 4.0 (licensing terms
                                                   per TVmaze API). https://www.tvmaze.com
+  libretro-database Game ROM identification       Hash-indexed (CRC32) No-Intro game data -
+                   (title, genre, developer,       title, genre, release date, etc. Data
+                   publisher, release date)        under CC BY-SA 4.0. Downloaded on demand,
+                                                  per platform, not bundled. Not shipped
+                                                  with NexusM.
+                                                  https://github.com/libretro/libretro-database
+  libretro-        Game box art                   Box art images, each owned by its game's
+  thumbnails                                      original publisher; redistributed by the
+                                                  libretro-thumbnails project without a
+                                                  separate stated license for the images
+                                                  themselves. Fetched on demand, per game,
+                                                  not bundled.
+                                                  https://github.com/libretro-thumbnails
 
 --------------------------------------------------------------------------------
 License texts:
@@ -105,6 +131,8 @@ License texts:
   BSD-2-Clause  https://opensource.org/licenses/BSD-2-Clause
   BSD-3-Clause  https://opensource.org/licenses/BSD-3-Clause
   Unlicense     https://unlicense.org
+  GPL-3.0       https://www.gnu.org/licenses/gpl-3.0.html
+  CC BY-SA 4.0  https://creativecommons.org/licenses/by-sa/4.0/
   GPL-2.0+      https://www.gnu.org/licenses/gpl-2.0.html
   CC BY 3.0     https://creativecommons.org/licenses/by/3.0/
 ================================================================================
