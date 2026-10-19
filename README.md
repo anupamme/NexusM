@@ -2,7 +2,7 @@
 
 **NexusM** is a free, self-hosted media server and portable media library manager for Windows, Linux, and Docker. It is a direct alternative to Plex, Jellyfin, and Emby, turning a computer you already own into a private streaming service for movies, TV shows, music, photos, podcasts, audiobooks, and eBooks, with no cloud account and no subscription.
 
-No cloud dependency. No subscription. No account required. Your media, your server, your rules.
+No cloud dependency. No subscription. No account required.
 
 ---
 
