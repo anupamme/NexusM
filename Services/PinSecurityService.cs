@@ -17,7 +17,11 @@ public class PinSecurityService
     private const int HashSizeBytes = 32;
     private const int MaxFailedAttempts = 5;
     private const int LockoutMinutes = 15;
-    public const int LockoutMinutesPublic = LockoutMinutes;
+    private const int MaxLockoutMinutes = 24 * 60;
+    /// <summary>How long a key can go without a new failed attempt before its escalation
+    /// history (LockoutCount) is forgiven - an honest typo every few months should not
+    /// eventually earn a 24-hour lockout.</summary>
+    private static readonly TimeSpan LockoutDecayWindow = TimeSpan.FromHours(24);
 
     private readonly IServiceProvider _serviceProvider;
     private readonly ConfigService _configService;
@@ -108,6 +112,7 @@ public class PinSecurityService
 
             db.Users.Add(admin);
             await db.SaveChangesAsync();
+            AutoLoginCache.Invalidate();
 
             _logger.LogWarning("Default admin user '{Username}' created with PIN 000000 - change this immediately!", adminUsername);
         }
@@ -122,20 +127,26 @@ public class PinSecurityService
     /// </summary>
     public void CreateUserDatabase(string username)
     {
+        if (!UserNames.IsPathSafe(username))
+        {
+            _logger.LogError("Refusing to create a user database for unsafe user name '{Username}'", username);
+            return;
+        }
         var usersDir = Path.Combine(AppContext.BaseDirectory, "users");
         if (!Directory.Exists(usersDir))
             Directory.CreateDirectory(usersDir);
 
-        var userDbPath = Path.Combine(usersDir, $"{username}.db");
+        var userDbPath = UserNames.DbPath(username);
         if (File.Exists(userDbPath))
             return;
 
         // Create a valid SQLite database using Microsoft.Data.Sqlite
         using var conn = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={userDbPath}");
         conn.Open();
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = "CREATE TABLE IF NOT EXISTS Favourites (Id INTEGER PRIMARY KEY AUTOINCREMENT, MediaType TEXT NOT NULL, MediaId INTEGER NOT NULL, DateAdded TEXT NOT NULL DEFAULT (datetime('now')), UNIQUE(MediaType, MediaId))";
-        cmd.ExecuteNonQuery();
+        SqliteWal.Apply(conn);
+        // Full per-user schema from the start (it used to be Favourites only, with the rest
+        // created lazily on the first open) - same statements, same tables.
+        UserDbSchema.Ensure(conn);
         _logger.LogInformation("Created user database: {Path}", userDbPath);
     }
 
@@ -146,14 +157,36 @@ public class PinSecurityService
     public int GetLockoutMinutesRemaining(string clientIP, string username)
     {
         var key = $"{clientIP}:{username}";
-        if (_loginAttempts.TryGetValue(key, out var attempt) && attempt.LockoutUntil.HasValue)
+        if (!_loginAttempts.TryGetValue(key, out var attempt)) return 0;
+
+        lock (attempt)
         {
-            if (DateTime.UtcNow < attempt.LockoutUntil.Value)
+            if (attempt.LockoutUntil.HasValue)
             {
-                return (int)Math.Ceiling((attempt.LockoutUntil.Value - DateTime.UtcNow).TotalMinutes);
+                if (DateTime.UtcNow < attempt.LockoutUntil.Value)
+                {
+                    return (int)Math.Ceiling((attempt.LockoutUntil.Value - DateTime.UtcNow).TotalMinutes);
+                }
+                // Lockout window passed - clear the lockout itself, but keep LockoutCount so a
+                // repeat offender's next lockout still escalates, instead of resetting the
+                // backoff to square one on every single retry (see GitHub issue discussion on
+                // PR #1 - that version's LockoutCount was wiped right here, making the
+                // escalation never actually take effect).
+                attempt.LockoutUntil = null;
             }
-            // Lockout expired, reset
-            _loginAttempts.TryRemove(key, out _);
+
+            // Forgive old escalation history once the key has been quiet for a while, and drop
+            // the entry entirely once there is nothing left worth keeping, so a one-off burst
+            // from a source that never retries does not sit in memory forever.
+            if (attempt.LastFailedAttemptUtc is { } last && DateTime.UtcNow - last > LockoutDecayWindow)
+            {
+                attempt.LockoutCount = 0;
+                attempt.FailedAttempts = 0;
+            }
+            if (attempt is { FailedAttempts: 0, LockoutCount: 0, LockoutUntil: null })
+            {
+                _loginAttempts.TryRemove(key, out _);
+            }
         }
         return 0;
     }
@@ -166,17 +199,28 @@ public class PinSecurityService
         var key = $"{clientIP}:{username}";
         var attempt = _loginAttempts.GetOrAdd(key, _ => new LoginAttempt());
 
-        attempt.FailedAttempts++;
-
-        if (attempt.FailedAttempts >= MaxFailedAttempts)
+        lock (attempt)
         {
-            attempt.LockoutUntil = DateTime.UtcNow.AddMinutes(LockoutMinutes);
-            _logger.LogWarning("Account locked: {Username} from {IP} ({Attempts} failed attempts, locked for {Minutes} minutes)",
-                username, clientIP, attempt.FailedAttempts, LockoutMinutes);
-            return true;
-        }
+            attempt.FailedAttempts++;
+            attempt.LastFailedAttemptUtc = DateTime.UtcNow;
 
-        return false;
+            if (attempt.FailedAttempts >= MaxFailedAttempts)
+            {
+                // Exponential backoff: 15, 30, 60, ... minutes, capped at 24 hours. LockoutCount
+                // survives across individual lockout windows (see GetLockoutMinutesRemaining)
+                // so a repeat offender keeps escalating instead of resetting every time they
+                // wait out the current lockout.
+                var lockoutMinutes = Math.Min(LockoutMinutes * Math.Pow(2, attempt.LockoutCount), MaxLockoutMinutes);
+                attempt.LockoutUntil = DateTime.UtcNow.AddMinutes(lockoutMinutes);
+                attempt.LockoutCount++;
+                attempt.FailedAttempts = 0;
+                _logger.LogWarning("Account locked: {Username} from {IP} (locked for {Minutes} minutes, escalation level {Level})",
+                    username, clientIP, lockoutMinutes, attempt.LockoutCount);
+                return true;
+            }
+
+            return false;
+        }
     }
 
     /// <summary>
@@ -192,5 +236,7 @@ public class PinSecurityService
     {
         public int FailedAttempts { get; set; }
         public DateTime? LockoutUntil { get; set; }
+        public int LockoutCount { get; set; }
+        public DateTime? LastFailedAttemptUtc { get; set; }
     }
 }
