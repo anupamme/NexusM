@@ -1,14 +1,41 @@
-# NexusM
+# NexusM: Free Self-Hosted Media Server
 
-**NexusM** is a self-hosted, portable media library manager that runs as a lightweight web server. It lets you organize, browse, and stream your personal media collection from any device on your local network through a modern web interface.
+**NexusM** is a free, self-hosted media server and portable media library manager for Windows, Linux, and Docker. It is a direct alternative to Plex, Jellyfin, and Emby, turning a computer you already own into a private streaming service for movies, TV shows, music, photos, podcasts, audiobooks, and eBooks, with no cloud account and no subscription.
 
-No cloud dependency. No subscription. Your media, your server, your rules.
+No cloud dependency. No subscription. No account required. Your media, your server, your rules.
 
 ---
 
 ## Overview
 
-NexusM is a single-file executable (Windows and Linux) that serves a web-based UI for managing and playing multiple types of media. It scans your local and network drives, extracts metadata, fetches rich information from online databases (TMDB, TVMaze, LRCLIB, Jikan/MyAnimeList, Watchmode), and presents everything through a responsive interface accessible from any browser on your network.
+NexusM is a single-file executable (Windows and Linux, with an official Docker image) that serves a web-based UI for managing and playing every common type of personal media. It scans your local and network drives, extracts metadata, fetches rich information from online databases (TMDB, TVMaze, LRCLIB, Jikan/MyAnimeList, Watchmode, fanart.tv), and presents everything through a responsive interface accessible from any browser on your network, with native Android TV and Samsung TV apps for the living room.
+
+Unlike Plex and Emby, hardware-accelerated transcoding (NVIDIA NVENC, Intel QSV/VAAPI, AMD AMF) is included at no cost and requires no paid tier. Unlike Jellyfin, most features ship built in rather than through third-party plugins.
+
+---
+
+## NexusM vs Plex vs Jellyfin vs Emby
+
+| | NexusM | Plex | Jellyfin | Emby |
+|---|---|---|---|---|
+| Price | Free | Free, with paid Plex Pass tier | Free, open source | Free, with paid Emby Premiere tier |
+| Account required | No | Yes (Plex account) | No | Yes for some features |
+| Hardware transcoding | Included free | Requires Plex Pass | Included free | Requires Emby Premiere |
+| License model | Source-available (PolyForm Noncommercial) | Proprietary | Open source (GPL) | Proprietary |
+| Media types | Movies, TV, anime, music, music videos, photos, podcasts, audiobooks, eBooks, comics, radio, internet TV | Movies, TV, music, photos | Movies, TV, music, photos, books | Movies, TV, music, photos, books |
+| Built-in game emulation | Yes (ROM and HTML5 web games) | No | No | No |
+| Audiobook library | Yes, dedicated library type with chapters, speed control, sleep timer, and bookmarks | No, requires a third-party app such as Audiobookshelf | No native support | No confirmed native support |
+| eBook and comic library | Yes, PDF/EPUB with in-browser reader plus CBZ/CBR comic reader | Via third-party plugins only | Basic Books library type | Basic Books library type |
+| Photo library with map view | Yes, GPS clustering on a world map | "Places" map feature shipped in 2017, since removed | No | No |
+| Custom music player interfaces | Yes, multiple built-in skins (retro hardware-style players, a cinema "Go Big" mode) | Single player UI | Single player UI | Single player UI |
+| Natural-language / dialogue search | Yes (Smart Search, local AI model, searches subtitle dialogue to jump to a scene) | No | No | No |
+| Built-in content request system | Yes, native Radarr/Sonarr requests, no separate app needed | No, requires Overseerr or Ombi | No, requires Jellyseerr or Ombi | No, requires Ombi |
+| Built-in DLNA/UPnP server | Yes | Yes | Yes | Yes |
+| Native Android TV / Samsung TV apps | Yes, both | Yes, both | Android TV yes, Samsung TV app rolling out | Android TV yes, Samsung TV limited |
+
+NexusM does not just match Plex, Jellyfin, and Emby, it goes well beyond their core feature set in several areas. The music library is considerably more advanced: full-text search, ReplayGain normalisation, a 10-band equalizer, synced lyrics, Last.fm scrobbling, and several selectable custom player interfaces, including retro hardware-style skins and a fullscreen "Go Big" cinema mode, rather than the single fixed player found in the other three. Audiobooks and eBooks are first-class libraries in NexusM, with chapter navigation, variable playback speed, sleep timers, and bookmarks for audiobooks, and a proper in-browser reader for PDF, EPUB, CBZ, and CBR, where Plex, Jellyfin, and Emby either have no native audiobook support at all or only a basic Books library type with no comparable reading experience. The photo library also stands apart: NexusM plots your library on an interactive world map using embedded GPS data, a feature Plex briefly offered and discontinued, and one that Jellyfin and Emby do not currently offer. On top of all this, NexusM adds built-in retro game emulation and bundled HTML5 web games, none of which the other three provide, while keeping hardware transcoding free and not requiring a user account.
+
+*Comparison accurate as of October 2026, based on each project's own published pricing and feature pages, official forums, and documentation.*
 
 ---
 
@@ -47,10 +74,14 @@ NexusM is a single-file executable (Windows and Linux) that serves a web-based U
 - Last.fm scrobbling - scrobble your music listening history to Last.fm.
 
 ### Discovery
+- **Smart Search** - semantic, natural-language search across your library, powered by a local AI model. Finds titles by meaning rather than exact keywords, and includes dialogue/scene search for movies and TV: search for what a character says (for example "when he promises he will be back") and jump straight to that moment in the video, matched against subtitle text rather than on-screen action. Runs locally, opt-in, no cloud API calls.
 - **What's New Online** - a discovery page showing recent and upcoming releases from TMDB across movies, TV shows, anime, documentaries, and cartoons. Filter by country, genre, and mode (recent or upcoming). Streaming provider badges are shown for each title where available.
 - **fanart.tv Artwork** - pick alternative posters, backdrops, and artist images from fanart.tv in the metadata editor for movies, TV shows, and music artists.
 - **Mood Explorer** - 8 mood-based music recommendation filters: Chill, Energy, Focus, Party, Love, Study, Discovery, and Nostalgia.
 - **Go Big Mode** - a fullscreen TV and cinema presentation mode with large poster cards, full keyboard navigation (arrow keys, Enter, Escape, F for fullscreen, Space to pause), and a paired mobile remote. A phone or tablet on the same network can browse the library and send content to the main display while Go Big is running.
+
+### Requests
+- **Native Radarr/Sonarr Requests** - users can browse for movies and TV shows not yet in the library and request them directly from NexusM, with a per-request quality profile and season picker. Approved requests are sent straight to your own Radarr and Sonarr instances. No separate request app (such as Overseerr or Ombi) is needed.
 
 ### Playlists
 - **Auto-Generated Playlists** - automatically builds smart playlists from your music library: by decade, top 100 most played, recently added, and all favourites. Configuration is saved server-side for consistency across all devices.
@@ -149,11 +180,39 @@ See the [User Guide](https://nexusm.org/d/nexusm_user_guide.pdf) for a full conf
 
 ---
 
+## Frequently Asked Questions
+
+**Is NexusM free?**
+Yes. NexusM is free to download and use for personal, non-commercial purposes, including hardware-accelerated transcoding, which Plex and Emby charge for through Plex Pass and Emby Premiere.
+
+**Is NexusM a Plex alternative?**
+Yes. NexusM covers the same core use case, a private media server for movies, TV, and music, without a cloud account, a required internet connection, or a paid tier for hardware transcoding.
+
+**Is NexusM a Jellyfin alternative?**
+Yes. NexusM targets the same self-hosted, no-account model as Jellyfin, but ships more media types and features built in by default, including game emulation, photos, podcasts, audiobooks, eBooks, and internet TV with an EPG grid, rather than relying on a plugin ecosystem.
+
+**Is NexusM open source?**
+NexusM is source-available. The code on GitHub is public and can be read, built, and modified for personal, non-commercial use under the PolyForm Noncommercial License 1.0.0. Commercial use or redistribution requires a separate license from the author.
+
+**Does NexusM require an account or internet connection?**
+No. NexusM runs entirely on your own hardware and does not require a user account, a cloud relay, or an internet connection for local playback. An internet connection is only used optionally, for metadata lookups (TMDB, TVMaze) and remote access.
+
+**What platforms does NexusM run on?**
+Windows and Linux as a portable, single-folder install, plus an official Docker image. Client apps are available for Android TV and Samsung TV.
+
+**Does NexusM support hardware transcoding?**
+Yes, at no cost. NexusM supports NVIDIA NVENC, Intel Quick Sync (QSV/VAAPI), and AMD AMF hardware encoders, including HDR tone mapping for HDR10, HDR10+, HLG, and Dolby Vision content.
+
+**Does NexusM have a more advanced music, photo, or search experience than Plex, Jellyfin, or Emby?**
+In several areas, yes. The music library supports full-text search, ReplayGain normalisation, a 10-band equalizer, synced lyrics, and several custom player interfaces, including retro hardware-style skins, where the other three offer one fixed player. Smart Search adds semantic, natural-language search, including dialogue/scene search that finds a moment in a movie or TV episode by what a character says, something none of the three provide natively. The photo library plots images on an interactive world map using embedded GPS data, a feature Plex briefly shipped and discontinued and that Jellyfin and Emby do not currently offer. NexusM also includes native Radarr/Sonarr request support built in, where Plex, Jellyfin, and Emby all rely on a separate app such as Overseerr, Jellyseerr, or Ombi for the same functionality.
+
+---
+
 ## License
 
-This project is licensed under **Creative Commons Attribution-NonCommercial-NoDerivatives 4.0 International (CC BY-NC-ND 4.0)**.
+This project is licensed under the **PolyForm Noncommercial License 1.0.0**.
 
-You are free to use and share NexusM for personal, non-commercial purposes. Commercial use, modification, and redistribution of modified versions are not permitted.
+You are free to use, copy, modify, and share NexusM for personal, non-commercial purposes, including sharing your own modified versions. Commercial use of NexusM, or of any modified version of it, requires a separate license from the author.
 
 See [LICENSE](LICENSE) for full terms.
 
