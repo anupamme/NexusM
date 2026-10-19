@@ -75,8 +75,11 @@ public class AuthController : ControllerBase
             var locked = _pinSecurity.RecordFailedAttempt(clientIP, dto.Username);
             await Task.Delay(1000); // Slow down brute force
             if (locked)
+            {
+                var minutesRemaining = _pinSecurity.GetLockoutMinutesRemaining(clientIP, dto.Username);
                 return StatusCode(StatusCodes.Status429TooManyRequests,
-                    new { error = $"Too many failed attempts. Account locked for {PinSecurityService.LockoutMinutesPublic} minutes." });
+                    new { error = $"Too many failed attempts. Account locked for {minutesRemaining} minutes." });
+            }
             return Unauthorized(new { error = "Invalid username or PIN" });
         }
 

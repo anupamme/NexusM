@@ -52,6 +52,18 @@
   </ItemGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="NexusM.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The test project lives in a subdirectory; exclude it from this project's own globbing -->
+    <Compile Remove="NexusM.Tests\**" />
+    <Content Remove="NexusM.Tests\**" />
+    <None Remove="NexusM.Tests\**" />
+    <EmbeddedResource Remove="NexusM.Tests\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Copy config file to output directory (PreserveNewest: only overwrites if project conf is newer) -->
     <None Include="NexusM.conf" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>

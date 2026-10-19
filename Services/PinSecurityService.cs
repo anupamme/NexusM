@@ -18,7 +18,7 @@ public class PinSecurityService
     private const int MaxFailedAttempts = 5;
     private const int LockoutMinutes = 15;
     private const int MaxLockoutMinutes = 24 * 60;
-    public const int LockoutMinutesPublic = LockoutMinutes;
+    private const int LockoutHistoryDecayHours = 24;
 
     private readonly IServiceProvider _serviceProvider;
     private readonly ConfigService _configService;
@@ -28,6 +28,13 @@ public class PinSecurityService
     /// Tracks failed login attempts per "IP:username" key.
     /// </summary>
     private readonly ConcurrentDictionary<string, LoginAttempt> _loginAttempts = new();
+
+    private Func<DateTime> _utcNow = () => DateTime.UtcNow;
+
+    /// <summary>
+    /// Overrides the clock used for lockout calculations. Test-only seam.
+    /// </summary>
+    internal void SetClockForTesting(Func<DateTime> clock) => _utcNow = clock;
 
     public PinSecurityService(
         IServiceProvider serviceProvider,
@@ -147,16 +154,33 @@ public class PinSecurityService
     public int GetLockoutMinutesRemaining(string clientIP, string username)
     {
         var key = $"{clientIP}:{username}";
-        if (_loginAttempts.TryGetValue(key, out var attempt) && attempt.LockoutUntil.HasValue)
+        if (!_loginAttempts.TryGetValue(key, out var attempt))
+            return 0;
+
+        lock (attempt.Lock)
         {
-            if (DateTime.UtcNow < attempt.LockoutUntil.Value)
+            if (!attempt.LockoutUntil.HasValue)
+                return 0;
+
+            var now = _utcNow();
+            if (now < attempt.LockoutUntil.Value)
             {
-                return (int)Math.Ceiling((attempt.LockoutUntil.Value - DateTime.UtcNow).TotalMinutes);
+                return (int)Math.Ceiling((attempt.LockoutUntil.Value - now).TotalMinutes);
             }
-            // Lockout expired, reset
-            _loginAttempts.TryRemove(key, out _);
+
+            // Lockout window has passed. Only drop the escalation history once it has
+            // decayed - otherwise the next lockout would wrongly restart at the base duration.
+            if (attempt.LastLockoutAt.HasValue &&
+                now - attempt.LastLockoutAt.Value >= TimeSpan.FromHours(LockoutHistoryDecayHours))
+            {
+                _loginAttempts.TryRemove(key, out _);
+            }
+            else
+            {
+                attempt.LockoutUntil = null;
+            }
+            return 0;
         }
-        return 0;
     }
 
     /// <summary>
@@ -167,20 +191,31 @@ public class PinSecurityService
         var key = $"{clientIP}:{username}";
         var attempt = _loginAttempts.GetOrAdd(key, _ => new LoginAttempt());
 
-        attempt.FailedAttempts++;
-
-        if (attempt.FailedAttempts >= MaxFailedAttempts)
+        lock (attempt.Lock)
         {
-            var lockoutMinutes = Math.Min(LockoutMinutes * Math.Pow(2, attempt.LockoutCount), MaxLockoutMinutes);
-            attempt.LockoutUntil = DateTime.UtcNow.AddMinutes(lockoutMinutes);
-            attempt.LockoutCount++;
-            attempt.FailedAttempts = 0;
-            _logger.LogWarning("Account locked: {Username} from {IP} ({Attempts} failed attempts, locked for {Minutes} minutes)",
-                username, clientIP, MaxFailedAttempts, lockoutMinutes);
-            return true;
-        }
+            var now = _utcNow();
+            if (attempt.LastLockoutAt.HasValue &&
+                now - attempt.LastLockoutAt.Value >= TimeSpan.FromHours(LockoutHistoryDecayHours))
+            {
+                attempt.LockoutCount = 0;
+            }
 
-        return false;
+            attempt.FailedAttempts++;
+
+            if (attempt.FailedAttempts >= MaxFailedAttempts)
+            {
+                var lockoutMinutes = Math.Min(LockoutMinutes * Math.Pow(2, attempt.LockoutCount), MaxLockoutMinutes);
+                attempt.LockoutUntil = now.AddMinutes(lockoutMinutes);
+                attempt.LastLockoutAt = now;
+                attempt.LockoutCount++;
+                attempt.FailedAttempts = 0;
+                _logger.LogWarning("Account locked: {Username} from {IP} ({Attempts} failed attempts, locked for {Minutes} minutes)",
+                    username, clientIP, MaxFailedAttempts, lockoutMinutes);
+                return true;
+            }
+
+            return false;
+        }
     }
 
     /// <summary>
@@ -197,5 +232,7 @@ public class PinSecurityService
         public int FailedAttempts { get; set; }
         public DateTime? LockoutUntil { get; set; }
         public int LockoutCount { get; set; }
+        public DateTime? LastLockoutAt { get; set; }
+        public readonly object Lock = new();
     }
 }
